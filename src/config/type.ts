@@ -28,4 +28,6 @@ interface RagflowNodeConfig {
     apiBase: string;
     apiKey: string;
     chatId: string;
+    priority:number;
+    enabled:boolean;
 }
