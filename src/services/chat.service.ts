@@ -17,7 +17,7 @@ interface PinnedSession {
     nodeConfig: RagflowNodeConfig; // 将成功节点的配置也存起来
 }
 
-export class ChatService {
+class ChatService {
 
 
     private botConfigs: Map<string, BotRuntimeConfig>;
@@ -81,7 +81,6 @@ export class ChatService {
             return;
         }
 
-        // 1. 获取或创建固定会话
         const pinnedSession = await this._getOrCreatePinnedSession(payload);
         if (!pinnedSession) {
             await wechatBotClient.sendReplyMessage(botWxid, fromWxid, payload.data.data.msgId, '抱歉，我现在无法创建对话，请稍后再试。');
@@ -89,16 +88,14 @@ export class ChatService {
         }
 
         try {
-            // 2. 创建一个直连到“固定节点”的专用客户端，不再使用HA客户端
             const pinnedClient = new RagFlowApiClient(pinnedSession.nodeConfig.apiKey, pinnedSession.nodeConfig.apiBase);
 
-            // 3. 使用专用客户端进行对话
             const response = await pinnedClient.dialogCompletion(
                 pinnedSession.nodeConfig.chatId,
                 {
                     question: payload.data.data.msg,
                     session_id: pinnedSession.sessionId,
-                    stream:false,
+                    stream: false,
                 }
             );
 
@@ -106,7 +103,6 @@ export class ChatService {
 
         } catch (error) {
             Log.error(`与固定节点 [${pinnedSession.nodeConfig.apiBase}] 的通信失败。`, error);
-            // 4. 如果通信失败，说明固定节点可能宕机，从Redis删除失效的会话
             const redisKey = `wxsession:${botWxid}:${fromWxid}`;
             await redis.del(redisKey);
             Log.warn(`已从Redis中删除失效的会话: ${redisKey}`);
@@ -139,7 +135,7 @@ export class ChatService {
                 {
                     question: payload.data.data.msg,
                     session_id: pinnedSession.sessionId,
-                    stream:false,
+                    stream: false,
                 }
             );
             await wechatBotClient.sendReplyMessage(botWxid, fromWxid, payload.data.data.msgId, response.answer);
@@ -154,28 +150,20 @@ export class ChatService {
     }
 
 
-
-    /**
-     * 根据消息类型，从Redis获取或创建新的会话ID。
-     * @param payload - 完整的微信事件负载
-     * @returns 返回会话ID，如果创建失败则返回null
-     */
     private async _getOrCreatePinnedSession(payload: RecvMsgEvent): Promise<PinnedSession | null> {
-        const { fromType, fromWxid, finalFromWxid } = payload.data.data;
+        const {fromType, fromWxid, finalFromWxid} = payload.data.data;
         const botWxid = payload.wxid;
 
         const redisKey = fromType === 1
             ? `wxsession:${botWxid}:${fromWxid}`
             : `wxsession:${botWxid}:${fromWxid}:${finalFromWxid}`;
 
-        // 1. 尝试从Redis获取已固定的会话
         const storedSessionJson = await redis.get(redisKey);
         if (storedSessionJson) {
             Log.debug(`从Redis找到已固定的会话: (Key: ${redisKey})`);
             return JSON.parse(storedSessionJson);
         }
 
-        // 2. 如果没有，使用HA客户端创建新会话并固定
         const haClient = this.ragflowClients.get(botWxid);
         if (!haClient) {
             Log.warn(`机器人 [${botWxid}] 没有配置RAGFlow客户端。`);
@@ -185,11 +173,11 @@ export class ChatService {
         try {
             Log.info(`未找到固定会话，开始创建并固定新会话 (Key: ${redisKey})...`);
             const sessionName = `session_for_${redisKey}`;
-            const { session, nodeConfig } = await haClient.createSession(sessionName); // 调用重构后的方法
+            const {session, nodeConfig} = await haClient.createSession(sessionName);
 
             const newPinnedSession: PinnedSession = {
                 sessionId: session.id,
-                nodeConfig: nodeConfig, // 将节点配置一起打包
+                nodeConfig: nodeConfig,
             };
 
             // 3. 将包含节点信息的整个会话对象存入Redis
@@ -205,4 +193,5 @@ export class ChatService {
 
 }
 
+// @ts-ignore
 export const chatService = new ChatService();
