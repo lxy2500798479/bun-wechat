@@ -1,5 +1,6 @@
 import type {RecvMsgEvent} from "../types/request/chat.ts";
 import {Log} from "../lib/logger.ts";
+import {wechatBotClient} from "../wechat-bot";
 
 
 export class ChatService {
@@ -60,7 +61,9 @@ export class ChatService {
             return;
         }
 
-        console.log('处理私聊消息');
+        await wechatBotClient.sendReplyMessage(payload.wxid,payload.data.data.fromWxid,payload.data.data.msgId,'收到你的消息了');
+
+
         return;
     }
 
@@ -71,7 +74,8 @@ export class ChatService {
             Log.warn(`收到非白名单群组的消息，但未做处理。群组 wxid: ${payload.data.data.fromWxid}`);
             return;
         }
-        console.log('处理群聊消息');
+
+        await wechatBotClient.sendReplyMessage(payload.wxid,payload.data.data.fromWxid,payload.data.data.msgId,'收到你的消息了');
 
 
         return;
