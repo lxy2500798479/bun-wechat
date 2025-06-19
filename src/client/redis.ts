@@ -5,7 +5,8 @@ import Bun from "bun";
 
 const redisUrl = config.redis.url;
 if (!redisUrl) {
-    Log.error('环境变量 REDIS_URL 未设置，应用无法启动。');
+    Log.error('❌ REDIS_URL 未设置，应用无法启动。');
+    // @ts-ignore
     Bun.exit(1);
 }
 
@@ -32,6 +33,7 @@ redis.onclose = (error) => {
         }
     } catch (error) {
         Log.error('初始化 Redis 连接失败。', error as Error);
+        // @ts-ignore
         Bun.exit(1);
     }
 })();

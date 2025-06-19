@@ -1,5 +1,6 @@
 import { Log } from '../lib/logger';
 import type {WechatBotApiResponse} from "./types.ts";
+import config from "../config";
 
 /**
  * 用于与微信 HTTP API 交互的客户端。
@@ -9,7 +10,7 @@ export class WechatBotClient {
     private readonly baseUrl: string;
 
     constructor() {
-        const apiUrl = Bun.env.WECHAT_API_BASE;
+        const apiUrl = config.wechatBot.apiBase;
         if (!apiUrl) {
             const errorMessage = '环境变量 WECHAT_API_BASE 未设置，客户端无法启动。';
             Log.error(errorMessage);

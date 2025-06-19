@@ -1,36 +1,42 @@
 import type {RecvMsgEvent} from "../types/request/chat.ts";
 import {Log} from "../lib/logger.ts";
 import {wechatBotClient} from "../wechat-bot";
+import config from "../config";
 
+
+interface BotRuntimeConfig {
+    groupSet: Set<string>;
+    personSet: Set<string>;
+}
 
 export class ChatService {
 
 
-    // 将白名单的解析和加载放在构造函数或类的属性中，避免每次调用都重新解析
-    private whiteGroupSet: Set<string>;
-    private whitePersonSet: Set<string>;
+    private botConfigs: Map<string, BotRuntimeConfig>;
 
     constructor() {
-        // 从 .env 加载并解析白名单，存储为 Set 以提高查找效率
-        const whiteGroupList = (Bun.env.WHITE_GROUP_LIST || '').split(';').filter(Boolean);
-        const whitePersonList = (Bun.env.WHITE_PERSIONS || '').split(';').filter(Boolean);
+        this.botConfigs = new Map();
 
-        this.whiteGroupSet = new Set(whiteGroupList);
-        this.whitePersonSet = new Set(whitePersonList);
+        const {bots} = config.wechatBot;
 
-        if (this.whiteGroupSet.size > 0) {
-            Log.info(`群聊白名单已加载，共 ${this.whiteGroupSet.size} 个群组`);
+        Log.info(`开始加载 ${Object.keys(bots).length} 个机器人的专属配置...`);
+
+        for (const botWxid in bots) {
+            const botInfo = bots[botWxid];
+
+            // 将数组转换为 Set 以提高查找效率
+            this.botConfigs.set(botWxid, {
+                groupSet: new Set(botInfo!.whiteList.groups),
+                personSet: new Set(botInfo!.whiteList.persons),
+            });
+
+            Log.info(`机器人 [${botWxid}] 配置已加载：${botInfo!.whiteList.groups.length} 个群聊白名单，${botInfo!.whiteList.persons.length} 个个人白名单。`);
         }
-        if (this.whitePersonSet.size > 0) {
-            Log.info(`私聊白名单已加载，共 ${this.whitePersonSet.size} 个用户`);
-        }
+
     }
 
     public async handleRecvMsg(payload: RecvMsgEvent) {
-        console.log(payload)
-        const botWxid = payload.wxid;
-        const msgDetails = payload.data.data;
-        const {fromType, fromWxid, finalFromWxid, atWxidList, msg, msgSource} = msgDetails;
+        const {fromType} = payload.data.data;
 
 
         switch (fromType) {
@@ -54,33 +60,37 @@ export class ChatService {
 
 
     private async _excutePersonMsg(payload: RecvMsgEvent) {
+        const botWxid = payload.wxid;
+        const fromWxid = payload.data.data.fromWxid;
 
+        // 6. 从 Map 中获取该机器人的专属配置
+        const botConfig = this.botConfigs.get(botWxid);
 
-        if (!this.whitePersonSet.has(payload.data.data.fromWxid)) {
-            Log.warn(`收到非白名单用户的私聊消息，但未做处理。用户 wxid: ${payload.wxid}`);
+        // 7. 使用该机器人的专属白名单进行验证
+        if (!botConfig || !botConfig.personSet.has(fromWxid)) {
+            Log.warn(`机器人 [${botWxid}] 收到非其白名单用户 [${fromWxid}] 的消息，已忽略。`);
             return;
         }
-        // const res=await configClient.fetchBotConfigs()
-        // console.log(res)
 
-        await wechatBotClient.sendReplyMessage(payload.wxid,payload.data.data.fromWxid,payload.data.data.msgId,'收到你的消息了');
-
-
-        return;
+        Log.info(`机器人 [${botWxid}] 正在回复用户 [${fromWxid}]。`);
+        // 使用全局配置中的 failMsg 或其他消息
+        await wechatBotClient.sendReplyMessage(botWxid, fromWxid, payload.data.data.msgId, '收到你的消息了');
     }
 
     private async _excuteGroupMsg(payload: RecvMsgEvent) {
+        const botWxid = payload.wxid;
+        const fromWxid = payload.data.data.fromWxid; // 此处 fromWxid 是群聊ID
 
+        // 获取该机器人的专属配置
+        const botConfig = this.botConfigs.get(botWxid);
 
-        if (!this.whiteGroupSet.has(payload.data.data.fromWxid)) {
-            Log.warn(`收到非白名单群组的消息，但未做处理。群组 wxid: ${payload.data.data.fromWxid}`);
+        if (!botConfig || !botConfig.groupSet.has(fromWxid)) {
+            Log.warn(`机器人 [${botWxid}] 收到非其白名单群组 [${fromWxid}] 的消息，已忽略。`);
             return;
         }
 
-        await wechatBotClient.sendReplyMessage(payload.wxid,payload.data.data.fromWxid,payload.data.data.msgId,'收到你的消息了');
-
-
-        return;
+        Log.info(`机器人 [${botWxid}] 正在回复群聊 [${fromWxid}]。`);
+        await wechatBotClient.sendReplyMessage(botWxid, fromWxid, payload.data.data.msgId, '收到群消息了');
     }
 }
 

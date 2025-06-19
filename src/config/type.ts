@@ -1,3 +1,5 @@
+
+
 export interface AppConfig {
     database: { url: string; };
     redis: { url: string; cacheExpire: number; };
@@ -11,12 +13,19 @@ export interface AppConfig {
         apiBase: string;
         failMsg: string;
         chatMode: string;
-        bots: Record<string, { // bots 的键是 bot WXID
+        bots: Record<string, {
             whiteList: {
                 groups: string[];
                 persons: string[];
             };
+            ragflowNodes: RagflowNodeConfig[];
         }>;
     };
     // ... 其他配置项的接口
+}
+
+interface RagflowNodeConfig {
+    apiBase: string;
+    apiKey: string;
+    chatId: string;
 }
