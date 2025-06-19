@@ -1,0 +1,8 @@
+/**
+ * 整个推送事件的顶层结构
+ */
+export interface WechatEventPayload {
+  event: number;          //
+  wxid: string;           //
+  data: EventData;        //
+}
