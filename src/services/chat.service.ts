@@ -60,6 +60,8 @@ export class ChatService {
             Log.warn(`收到非白名单用户的私聊消息，但未做处理。用户 wxid: ${payload.wxid}`);
             return;
         }
+        // const res=await configClient.fetchBotConfigs()
+        // console.log(res)
 
         await wechatBotClient.sendReplyMessage(payload.wxid,payload.data.data.fromWxid,payload.data.data.msgId,'收到你的消息了');
 

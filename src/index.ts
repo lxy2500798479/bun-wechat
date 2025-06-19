@@ -1,14 +1,14 @@
 // src/index.ts
 
 import router from './router/router.ts';
-import redisClient from "./client/redis.ts"; // 导入我们定义好的 router 实例
+import config from "./config"; // 导入我们定义好的 router 实例
 
 console.log('🚀 Starting Bun server with encapsulated router...');
 
-redisClient.connect();
+
 
 const server = Bun.serve({
-    port: 3001,
+    port: config.server.port,
 
     // 将 fetch 的处理器指向我们 router 实例的 handle 方法
     fetch: router.handle,

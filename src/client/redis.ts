@@ -1,10 +1,12 @@
 import { RedisClient } from "bun";
 import { Log } from '../lib/logger';
+import config from "../config";
+import Bun from "bun";
 
-const redisUrl = Bun.env.REDIS_URL;
+const redisUrl = config.redis.url;
 if (!redisUrl) {
     Log.error('环境变量 REDIS_URL 未设置，应用无法启动。');
-    process.exit(1);
+    Bun.exit(1);
 }
 
 const redis = new RedisClient(redisUrl);
@@ -30,7 +32,7 @@ redis.onclose = (error) => {
         }
     } catch (error) {
         Log.error('初始化 Redis 连接失败。', error as Error);
-        process.exit(1);
+        Bun.exit(1);
     }
 })();
 
