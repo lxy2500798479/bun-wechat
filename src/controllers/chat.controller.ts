@@ -22,7 +22,7 @@ export async function receiveChatHandler(req: Request) {
                 break;
 
             default:
-                Log.warn(`接收到未处理的事件 event: ${payload.event}`);
+                // Log.warn(`接收到未处理的事件 event: ${payload.event}`);
                 break;
         }
 

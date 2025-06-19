@@ -24,7 +24,7 @@ export interface AppConfig {
     // ... 其他配置项的接口
 }
 
-interface RagflowNodeConfig {
+export interface RagflowNodeConfig {
     apiBase: string;
     apiKey: string;
     chatId: string;
