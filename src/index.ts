@@ -1,9 +1,6 @@
-// src/index.ts
-
 import router from './router/router.ts';
 import config from "./config"; // 导入我们定义好的 router 实例
 
-console.log('🚀 Starting Bun server with encapsulated router...');
 
 
 
@@ -24,4 +21,4 @@ const server = Bun.serve({
     },
 });
 
-console.log(`✅ Server is running on http://localhost:${server.port}`);
+console.log(`✅ Server is running on http://localhost:${server.port}/api/`);

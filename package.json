@@ -5,7 +5,9 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "dev": "bun run src/index.ts"
+    "dev": "bun run src/index.ts",
+    "build": "bun build ./src/index.ts --outdir ./dist",
+    "build:exe": "bun build ./src/index.ts --compile --outfile ./dist/wechat-assistant.exe"
   },
   "devDependencies": {
     "@types/bun": "latest"

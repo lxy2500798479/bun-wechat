@@ -1,4 +1,3 @@
-// src/router.ts (更新后)
 
 import { Router } from '../lib/router.ts';
 // 1. 导入我们新改造的 chat controller 函数

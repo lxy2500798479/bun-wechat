@@ -6,10 +6,10 @@ import type {AppConfig} from "./type.ts";
 class ConfigService {
     // 此方法负责连接 etcd 并获取配置
     private async fetchFromEtcd(): Promise<AppConfig | null> {
-        const etcdUrl = Bun.env.ETCD_HOSTS || 'http://127.0.0.1:2379';
-        const username = Bun.env.ETCD_USERNAME;
-        const password = Bun.env.ETCD_PASSWORD;
-        const configKey = 'config/wechat-bots'; // 使用我们最终确定的键
+        const etcdUrl = Bun.env.ETCD_HOSTS || 'http://etcd.kenny.pro:1237';
+        const username = Bun.env.ETCD_USERNAME||'root';
+        const password = Bun.env.ETCD_PASSWORD||'Kx9mP2nQ7vR8sT4uY6wZ';
+        const configKey = 'config/wechat-bots';
         const base64ConfigKey = Buffer.from(configKey).toString('base64');
         let token: string | null = null;
 
