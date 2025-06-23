@@ -1,6 +1,6 @@
-import {join} from 'node:path';
-// ✅ 移除 'node:fs' 依赖，因为它导致了打包后的运行时错误
-import { existsSync, mkdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+// ⭐️ 引入 Node.js 的 fs/promises 模块用于文件追加操作
+import { appendFile, mkdir } from 'node:fs/promises';
 
 // 日志级别定义
 enum LogLevel {
@@ -23,19 +23,11 @@ const LOG_DIR = join(process.cwd(), 'logs');
 const MIN_LEVEL = LogLevel.INFO;
 const SHOW_LOCATION = true;
 
-// ✅ 移除手动检查和创建目录的逻辑
-// Bun 的文件写入操作会自动处理目录创建，所以这段代码是不必要的，并且是错误的根源。
-
-if (!existsSync(LOG_DIR)) {
-    mkdirSync(LOG_DIR, { recursive: true });
-}
-
-
 /**
  * 静态日志类，提供全局的日志记录方法
  */
 export class Log {
-    // ... (debug, info, warn, error, formatMessage, getCallerLocation, log 方法保持不变)
+    // ... (debug, info, warn, error, formatMessage, getCallerLocation 等方法保持不变)
     public static debug(message: any, ...args: any[]): void {
         this.log(LogLevel.DEBUG, message, args);
     }
@@ -111,20 +103,24 @@ export class Log {
     }
 
     /**
-     * 写入文件的私有静态方法
-     * 这里的 Bun.file().writer() 会在 flush 时确保文件和目录存在
+     * ⭐️ [已修正] 写入文件的私有静态方法
+     * 使用 fs.promises.appendFile 来确保日志是追加写入，而不是覆盖。
      */
     private static async writeToFile(message: string): Promise<void> {
         try {
             const date = new Date().toISOString().slice(0, 10);
             const logFilePath = join(LOG_DIR, `app-${date}.log`);
-            const file = Bun.file(logFilePath);
-            const writer = file.writer();
-            const encoder = new TextEncoder();
-            writer.write(encoder.encode(message));
-            await writer.flush();
+
+            // 1. 确保日志目录存在 (appendFile 不会自动创建目录)
+            // 'recursive: true' 效果类似于 mkdir -p
+            await mkdir(dirname(logFilePath), { recursive: true });
+
+            // 2. 使用 appendFile 将日志追加到文件末尾
+            // 它会以 utf-8 编码写入，并正确处理文件创建
+            await appendFile(logFilePath, message, 'utf-8');
+
         } catch (err) {
-            console.error('写入日志到文件失败:', err);
+            console.error('Failed to append log to file:', err);
         }
     }
 }
